@@ -16,11 +16,36 @@ from pathlib import Path
 import spacy
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 from src.graph.neo4j_client import Neo4jClient
 
 load_dotenv()
+
+# -----------------------------------------------------------------
+# LLM Provider selection
+# -----------------------------------------------------------------
+
+def get_llm():
+    """Auto-select LLM based on available API keys in .env."""
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
+
+    if anthropic_key and anthropic_key != "your_anthropic_api_key_here":
+        from langchain_anthropic import ChatAnthropic
+        model = os.getenv("LLM_MODEL", "claude-haiku-4-5-20251001")
+        print(f"🤖 Using Anthropic: {model}")
+        return ChatAnthropic(model=model, temperature=0, anthropic_api_key=anthropic_key)
+
+    if openai_key and openai_key != "your_openai_api_key_here":
+        from langchain_openai import ChatOpenAI
+        model = os.getenv("LLM_MODEL", "gpt-4o-mini")
+        print(f"🤖 Using OpenAI: {model}")
+        return ChatOpenAI(model=model, temperature=0)
+
+    raise ValueError(
+        "❌ No API key found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in your .env file."
+    )
 
 # -----------------------------------------------------------------
 # Prompts
@@ -52,10 +77,7 @@ Be concise. Only extract clear, meaningful relationships."""),
 class KGBuilder:
     def __init__(self):
         self.nlp = spacy.load("en_core_web_sm")
-        self.llm = ChatOpenAI(
-            model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
-            temperature=0,
-        )
+        self.llm = get_llm()
         self.chain = EXTRACTION_PROMPT | self.llm
         self.client = Neo4jClient()
 
@@ -63,6 +85,8 @@ class KGBuilder:
         """Extract entities and relations from a text chunk via LLM."""
         response = self.chain.invoke({"text": text})
         raw = response.content.strip()
+
+        print(f"\n🔍 Raw LLM response:\n{raw}\n")
 
         # Strip markdown fences if present
         if raw.startswith("```"):
@@ -92,33 +116,49 @@ class KGBuilder:
 
     def write_to_neo4j(self, extracted: dict, source: str = "unknown"):
         """Write extracted entities and relationships into Neo4J."""
+        entities_written = 0
+        rels_written = 0
+
         # Write entities
         for entity in extracted.get("entities", []):
-            self.client.query(
-                """
-                MERGE (e:Entity {name: $name})
-                SET e.type = $type,
-                    e.description = $description,
-                    e.source = $source
-                """,
-                {
-                    "name": entity["name"],
-                    "type": entity.get("type", "Concept"),
-                    "description": entity.get("description", ""),
-                    "source": source,
-                },
-            )
+            try:
+                self.client.query(
+                    """
+                    MERGE (e:Entity {name: $name})
+                    SET e.type = $type,
+                        e.description = $description,
+                        e.source = $source
+                    """,
+                    {
+                        "name": entity["name"],
+                        "type": entity.get("type", "Concept"),
+                        "description": entity.get("description", ""),
+                        "source": source,
+                    },
+                )
+                entities_written += 1
+            except Exception as e:
+                print(f"  ⚠️  Failed to write entity '{entity.get('name')}': {e}")
 
         # Write relationships
         for rel in extracted.get("relationships", []):
-            self.client.query(
-                f"""
-                MATCH (a:Entity {{name: $source}})
-                MATCH (b:Entity {{name: $target}})
-                MERGE (a)-[r:{rel['relation']}]->(b)
-                """,
-                {"source": rel["source"], "target": rel["target"]},
-            )
+            try:
+                # Sanitize relation type: uppercase, replace spaces/hyphens with underscore
+                rel_type = rel['relation'].upper().replace(" ", "_").replace("-", "_")
+                self.client.query(
+                    f"""
+                    MATCH (a:Entity {{name: $source}})
+                    MATCH (b:Entity {{name: $target}})
+                    MERGE (a)-[r:{rel_type}]->(b)
+                    """,
+                    {"source": rel["source"], "target": rel["target"]},
+                )
+                rels_written += 1
+            except Exception as e:
+                print(f"  ⚠️  Failed to write relation '{rel}': {e}")
+
+        print(f"  💾 Wrote to Neo4J: {entities_written} entities, {rels_written} relationships")
+
 
     def build_from_file(self, filepath: str):
         """Full pipeline: read file → chunk → extract → write to Neo4J."""
