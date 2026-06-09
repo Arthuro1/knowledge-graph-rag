@@ -195,7 +195,7 @@ print(response)
 ## 👤 Author
 
 **Paul Meteng** — Software Engineer & AI Engineer  
-[LinkedIn](https://linkedin.com/in/YOUR_PROFILE) · [GitHub](https://github.com/YOUR_USERNAME)
+[LinkedIn](https://www.linkedin.com/in/paul-arthur-meteng-kamdem-06b922125/) · [GitHub](https://github.com/Arthuro1)
 
 ---
 
