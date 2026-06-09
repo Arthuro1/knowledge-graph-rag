@@ -1,0 +1,15 @@
+Machine Learning and Artificial Intelligence
+
+Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed. It focuses on developing computer programs that can access data and use it to learn for themselves.
+
+Deep learning is a subset of machine learning that uses neural networks with many layers. These neural networks are inspired by the structure and function of the human brain. Deep learning requires large amounts of training data and significant computational resources.
+
+Knowledge graphs are structured representations of information that capture entities and their relationships. They are used in search engines, recommendation systems, and question answering systems. Neo4J is a popular graph database used to store and query knowledge graphs.
+
+Retrieval-Augmented Generation (RAG) is a technique that combines information retrieval with language model generation. It retrieves relevant documents from a knowledge base and uses them as context for the language model to generate accurate, grounded responses.
+
+Natural Language Processing (NLP) is a branch of artificial intelligence that deals with the interaction between computers and humans using natural language. Key NLP tasks include sentiment analysis, named entity recognition, machine translation, and text summarization.
+
+Transformers are a type of neural network architecture that has revolutionized NLP. They use self-attention mechanisms to process sequences of data. BERT, GPT, and T5 are all transformer-based models. LangChain is a framework for building applications powered by language models.
+
+Embeddings are dense vector representations of text that capture semantic meaning. Sentence transformers produce high-quality embeddings for semantic search. Vector databases like Chroma, Qdrant, and Pinecone store and index these embeddings for fast similarity search.
