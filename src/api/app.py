@@ -1,11 +1,14 @@
 """
 FastAPI Application
 -------------------
-REST API for the Knowledge Graph RAG system.
+REST API + Web UI for the Knowledge Graph RAG system.
+Open http://localhost:8000 to use the chat interface.
 """
 
+from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -24,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Shared chain instance
 rag_chain = GraphRAGChain()
@@ -52,6 +58,12 @@ class StatsResponse(BaseModel):
 # -----------------------------------------------------------------
 # Routes
 # -----------------------------------------------------------------
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def index():
+    """Serve the Web UI."""
+    return (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+
 
 @app.get("/", tags=["Health"])
 def root():
