@@ -60,6 +60,12 @@ User Query
 
 ---
 
+## Screenshot
+
+![Application Screenshot](./images/ui.png)
+
+---
+
 ## 🚀 Quickstart
 
 ### Prerequisites
@@ -103,7 +109,14 @@ python src/graph/kg_builder.py --input data/raw/sample_docs.txt
 python src/main.py --query "What are the prerequisites for machine learning?"
 ```
 
-### 6. Start the API
+### 6. Start the Web-UI
+
+```bash
+uvicorn src.api.app:app --reload
+# Web-UI: http://localhost:8000
+```
+
+### 7. Start the API
 
 ```bash
 uvicorn src.api.app:app --reload
