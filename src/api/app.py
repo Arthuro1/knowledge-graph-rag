@@ -4,8 +4,9 @@ FastAPI Application
 REST API for the Knowledge Graph RAG system.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from src.rag.chain import GraphRAGChain
@@ -15,6 +16,13 @@ app = FastAPI(
     title="Knowledge Graph RAG API",
     description="RAG system powered by Neo4J Knowledge Graphs and LangChain",
     version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Shared chain instance
@@ -27,7 +35,7 @@ rag_chain = GraphRAGChain()
 
 class QueryRequest(BaseModel):
     question: str
-    verbose: bool = False
+    verbose: bool = True
 
 
 class QueryResponse(BaseModel):
@@ -58,6 +66,26 @@ def get_graph_stats():
         stats = client.get_graph_stats()
         client.close()
         return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/entities", tags=["Graph"])
+def get_entities(limit: int = Query(default=20, le=100)):
+    """Return entities stored in the knowledge graph."""
+    try:
+        client = Neo4jClient()
+        results = client.query(
+            """
+            MATCH (e:Entity)
+            RETURN e.name AS name, e.type AS type, e.description AS description
+            ORDER BY e.name
+            LIMIT $limit
+            """,
+            {"limit": limit},
+        )
+        client.close()
+        return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
