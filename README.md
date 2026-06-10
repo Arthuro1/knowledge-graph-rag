@@ -62,7 +62,7 @@ User Query
 
 ## Screenshot
 
-![Application Screenshot](./images/ui.png)
+![Application Screenshot](https://github.com/Arthuro1/knowledge-graph-rag/blob/main/images/ui.PNG?raw=true)
 
 ---
 
